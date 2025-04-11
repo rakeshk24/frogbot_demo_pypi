@@ -5,13 +5,12 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.7'
-    addToPath: true
-    architecture: 'x64'
-    
+strategy:
+  matrix:
+    Python310:
+      python.version: '3.10'
+
+steps:  
 - task: JfrogCliV2@1
   inputs:
     jfrogPlatformConnection: 'rkr-soleng-platform'
