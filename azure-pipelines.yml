@@ -1,0 +1,56 @@
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.7'
+    addToPath: true
+    architecture: 'x64'
+    
+- task: JfrogCliV2@1
+  inputs:
+    jfrogPlatformConnection: 'rkr-soleng-platform'
+    command: 'jf rt ping'
+
+- task: JFrogAudit@1
+  inputs:
+    xrayConnection: 'rkr-soleng-xr'
+    watchesSource: 'watches'
+    watches: 'ado-watch'
+    allowFailBuild: true
+
+- task: JFrogPip@1
+  inputs:
+    artifactoryConnection: 'rkr-soleng-rt'
+    command: 'install'
+    targetResolveRepo: 'rk-pypi-virtual'
+    collectBuildInfo: true
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    includeEnvVars: true
+    
+- task: CmdLine@2
+  inputs:
+    script: |
+      pwd
+      python setup.py sdist bdist_wheel
+      jf rt u dist/ rk-pypi-virtual/ --build-name=$(Build.DefinitionName) --build-number=$(Build.BuildNumber) --module=pyyaml_demo
+
+- task: JFrogPublishBuildInfo@1
+  inputs:
+    artifactoryConnection: 'rkr-soleng-rt'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+
+- task: JFrogBuildScan@1
+  inputs:
+    xrayConnection: 'rkr-soleng-xr'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    allowFailBuild: true
+    vuln: true
